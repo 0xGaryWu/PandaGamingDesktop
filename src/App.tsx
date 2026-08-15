@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Cable, CircleStop, Command, Gamepad2, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert } from "lucide-react";
+import { Cable, CircleStop, Command, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert } from "lucide-react";
 import { desktopApi } from "./api";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
+import pandaStudioMark from "./assets/panda-studio-mark.png";
 
 const defaults: MirrorOptions = {
   serial: "", maxSize: 1920, videoBitRateMbps: 12, maxFps: 60,
@@ -70,15 +71,10 @@ export default function App() {
 
   return <main className="app-shell">
     <header>
-      <div className="brand-mark"><Gamepad2 size={22} /></div>
-      <div><h1>Panda Gaming</h1><p>Android 桌面镜像控制台</p></div>
+      <div className="brand-mark"><img src={pandaStudioMark} alt="Panda Gaming Studio" /></div>
+      <div className="brand-copy"><h1>Panda Gaming Desktop</h1><p>借助开源项目 <a href="https://github.com/Genymobile/scrcpy" target="_blank" rel="noreferrer">scrcpy</a>，我们可以投射手机屏幕到电脑上，使用电脑的键鼠玩手机游戏！</p></div>
       <span className={`status-chip ${mirror.running ? "online" : ""}`}><i />{mirror.running ? "镜像运行中" : "待机"}</span>
     </header>
-
-    <section className="hero panel">
-      <div><span className="eyebrow">DEFAULT MIRROR MODE</span><h2>把手机画面带到桌面。</h2><p>基于本机 ADB 与 scrcpy，保持轻量、原生和低延迟。Panda Mouse Pro 可继续在手机侧工作。</p></div>
-      <MonitorPlay size={104} strokeWidth={1.2} />
-    </section>
 
     <div className="layout">
       <section className="panel devices-panel">
