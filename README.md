@@ -18,8 +18,9 @@ computer with keyboard and mouse controls. Powered by the open-source project
 - Chinese and English interface
 - Bundled adb, scrcpy, and scrcpy-server in release packages
 
-Panda Gaming Desktop uses the device's main display by default. Virtual display
-support is reserved for a future experimental release.
+Panda Gaming Desktop uses the device's main display by default. Its experimental
+independent display mode runs the game on your computer while leaving the
+phone's main screen free for normal use. This mode requires Android 10 or later.
 
 ## Development
 

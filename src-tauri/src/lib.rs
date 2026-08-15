@@ -216,6 +216,20 @@ fn command_error(output: &std::process::Output) -> String {
     }
 }
 
+fn android_sdk(adb: &Path, serial: &str) -> Result<u32, String> {
+    let output = hidden_command(adb)
+        .args(["-s", serial, "shell", "getprop", "ro.build.version.sdk"])
+        .output()
+        .map_err(|error| format!("无法运行 adb: {error}"))?;
+    if !output.status.success() {
+        return Err(format!("无法运行 adb: {}", command_error(&output)));
+    }
+    String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .parse()
+        .map_err(|_| "无法读取 Android SDK 版本".to_string())
+}
+
 fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
     if serial.trim().is_empty() {
         return Err("请先选择设备".into());
@@ -279,12 +293,17 @@ fn start_mirror(
     if options.serial.trim().is_empty() {
         return Err("请先选择设备".into());
     }
-    if options.virtual_display {
-        return Err("Virtual display 仍为实验功能，当前版本尚未开放".into());
-    }
     let scrcpy =
         resolve_tool("scrcpy", &app).ok_or("未找到 scrcpy，请重新安装 Panda Gaming Desktop")?;
     let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
+    if options.virtual_display {
+        let sdk = android_sdk(&adb, &options.serial)?;
+        if sdk < 29 {
+            return Err(format!(
+                "独立投屏需要 Android 10 或更高版本: 当前设备为 SDK {sdk}"
+            ));
+        }
+    }
     let mut guard = process.0.lock().map_err(|_| "镜像进程状态不可用")?;
     if let Some(running) = guard.as_mut() {
         if running
@@ -322,11 +341,21 @@ fn start_mirror(
         "--window-title",
         "Panda Gaming Mirror",
     ]);
-    if options.turn_screen_off {
+    if options.virtual_display {
+        let height = options.max_size.saturating_mul(9) / 16;
+        command
+            .arg(format!("--new-display={}x{}", options.max_size, height))
+            .arg("--display-ime-policy=local");
+    }
+    if options.turn_screen_off && !options.virtual_display {
         command.arg("--turn-screen-off");
     }
     if options.stay_awake {
-        command.arg("--stay-awake");
+        command.arg(if options.virtual_display {
+            "--keep-active"
+        } else {
+            "--stay-awake"
+        });
     }
     if options.fullscreen {
         command.arg("--fullscreen");
@@ -337,7 +366,7 @@ fn start_mirror(
     if options.always_on_top {
         command.arg("--always-on-top");
     }
-    if options.launch_panda_mouse_pro {
+    if options.launch_panda_mouse_pro || options.virtual_display {
         command.arg("--start-app=com.panda.mouse");
     }
     let child = command

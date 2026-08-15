@@ -95,6 +95,15 @@ export default function App() {
     setOptions((current) => ({ ...current, [key]: value }));
   }
 
+  function setVirtualDisplay(enabled: boolean) {
+    setOptions((current) => ({
+      ...current,
+      virtualDisplay: enabled,
+      turnScreenOff: enabled ? false : current.turnScreenOff,
+      launchPandaMousePro: enabled ? true : current.launchPandaMousePro
+    }));
+  }
+
   const message = "raw" in notice ? notice.raw : t(notice.key, notice.values);
 
   return <main className="app-shell">
@@ -127,11 +136,11 @@ export default function App() {
           <Toggle label={t("stayAwake")} checked={options.stayAwake} onChange={(v) => setOption("stayAwake", v)} disabled={mirror.running}/>
           <Toggle label={t("startFullscreen")} checked={options.fullscreen} onChange={(v) => setOption("fullscreen", v)} disabled={mirror.running}/>
           <Toggle label={t("alwaysOnTop")} checked={options.alwaysOnTop} onChange={(v) => setOption("alwaysOnTop", v)} disabled={mirror.running}/>
-          <Toggle label={t("launchPmp")} checked={options.launchPandaMousePro} onChange={(v) => setOption("launchPandaMousePro", v)} disabled={mirror.running}/>
-          <Toggle label={t("turnScreenOff")} checked={options.turnScreenOff} onChange={(v) => setOption("turnScreenOff", v)} disabled={mirror.running}/>
+          <Toggle label={t("launchPmp")} checked={options.launchPandaMousePro} onChange={(v) => setOption("launchPandaMousePro", v)} disabled={mirror.running || options.virtualDisplay}/>
+          <Toggle label={t("turnScreenOff")} checked={options.turnScreenOff} onChange={(v) => setOption("turnScreenOff", v)} disabled={mirror.running || options.virtualDisplay}/>
         </div>
         <div className="mapping-mode"><Keyboard size={17}/><MousePointer2 size={17}/><div><strong>{t("mappingMode")}</strong><p>{t("mappingDescription")}</p></div><span>{t("enabledByDefault")}</span></div>
-        <div className="experimental"><TriangleAlert size={18}/><div><strong>{t("virtualDisplayUnavailable")}</strong><p>{t("virtualDisplayDescription")}</p></div><span>{t("experimental")}</span></div>
+        <label className="experimental experimental-toggle"><TriangleAlert size={18}/><div><strong>{t("virtualDisplayUnavailable")}</strong><p>{t("virtualDisplayDescription")}</p></div><span>{t("experimental")}</span><input type="checkbox" checked={options.virtualDisplay} onChange={(event) => setVirtualDisplay(event.target.checked)} disabled={mirror.running}/><i /></label>
       </section>
     </div>
 
