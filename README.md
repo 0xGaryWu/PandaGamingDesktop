@@ -72,9 +72,23 @@ Unsigned macOS and Windows builds may display operating-system security
 warnings. Code signing and macOS notarization are recommended for public
 releases.
 
+## Privacy and Code Signing
+
+Panda Gaming Desktop does not collect analytics or transmit personal data.
+See the [privacy policy](PRIVACY.md) for details.
+
+Release signing rules, trusted build sources, and maintainer roles are defined
+in the [code signing policy](CODE_SIGNING_POLICY.md).
+
 ## Third-Party Software
 
 Release packages include the license file supplied by scrcpy and the project's
 [third-party notices](src-tauri/resources/THIRD_PARTY_NOTICES.txt). The exact
 scrcpy package version, source URL, and SHA-256 checksum used by each build are
 recorded in `tools/panda-tools.json` inside the installed application.
+
+## License
+
+Source code and project artwork are licensed under the
+[Apache License 2.0](LICENSE). This license does not grant permission to use
+Panda Gaming trademarks or imply endorsement of modified distributions.

@@ -3,6 +3,8 @@ name = "panda-gaming-desktop"
 version = "0.1.0"
 description = "Lightweight Android mirroring desktop controller"
 authors = ["Panda Gaming"]
+license = "Apache-2.0"
+repository = "https://github.com/0xGaryWu/PandaGamingDesktop"
 edition = "2021"
 
 [lib]
