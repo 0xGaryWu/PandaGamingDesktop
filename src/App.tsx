@@ -99,7 +99,7 @@ export default function App() {
           <Toggle label="保持设备唤醒" checked={options.stayAwake} onChange={(v) => setOption("stayAwake", v)} disabled={mirror.running}/>
           <Toggle label="启动即全屏" checked={options.fullscreen} onChange={(v) => setOption("fullscreen", v)} disabled={mirror.running}/>
           <Toggle label="窗口置顶" checked={options.alwaysOnTop} onChange={(v) => setOption("alwaysOnTop", v)} disabled={mirror.running}/>
-          <Toggle label="启动 Panda Mouse Pro" checked={options.launchPandaMousePro} onChange={(v) => setOption("launchPandaMousePro", v)} disabled={mirror.running}/>
+          <Toggle label="启动镜像时打开 Panda Mouse Pro" checked={options.launchPandaMousePro} onChange={(v) => setOption("launchPandaMousePro", v)} disabled={mirror.running}/>
           <Toggle label="启动后关闭手机屏幕" checked={options.turnScreenOff} onChange={(v) => setOption("turnScreenOff", v)} disabled={mirror.running}/>
         </div>
         <div className="mapping-mode"><Keyboard size={17}/><MousePointer2 size={17}/><div><strong>键鼠映射模式</strong><p>默认使用 <code>-K -M</code> 与 <code>--mouse-bind=++++:++++</code>，键盘和全部鼠标按键直接发送给手机。</p></div><span>默认开启</span></div>
