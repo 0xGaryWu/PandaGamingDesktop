@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Panda Gaming Desktop",
+  "version": "0.1.0",
+  "identifier": "com.pandagaming.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "title": "Panda Gaming Desktop",
+      "width": 1080,
+      "height": 760,
+      "minWidth": 780,
+      "minHeight": 650,
+      "resizable": true,
+      "fullscreen": false,
+      "center": true,
+      "backgroundColor": "#090c09"
+    }],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}
