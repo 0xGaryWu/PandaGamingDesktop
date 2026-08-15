@@ -1,6 +1,6 @@
 [package]
 name = "panda-gaming-desktop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Lightweight Android mirroring desktop controller"
 authors = ["Panda Gaming"]
 license = "Apache-2.0"
