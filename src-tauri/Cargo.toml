@@ -1,10 +1,11 @@
 [package]
 name = "panda-gaming-desktop"
 version = "0.1.2"
-description = "Lightweight Android mirroring desktop controller"
-authors = ["Panda Gaming"]
+description = "Desktop companion for Panda Mouse Pro with Android mirroring and keyboard-and-mouse controls"
+authors = ["Beijing Guanshanjiyue Technology Co., Ltd."]
 license = "Apache-2.0"
 repository = "https://github.com/0xGaryWu/PandaGamingDesktop"
+homepage = "https://pandagame.app"
 edition = "2021"
 
 [lib]

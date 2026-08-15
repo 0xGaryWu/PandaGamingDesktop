@@ -22,13 +22,26 @@
       "center": true,
       "backgroundColor": "#090c09"
     }],
-    "security": { "csp": null }
+    "security": {
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "style-src": "'self' 'unsafe-inline'",
+        "font-src": "'self'",
+        "object-src": "'none'",
+        "frame-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      }
+    }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Beijing Guanshanjiyue Technology Co., Ltd.",
     "copyright": "Copyright 2026 Beijing Guanshanjiyue Technology Co., Ltd.",
-    "homepage": "https://github.com/0xGaryWu/PandaGamingDesktop",
+    "homepage": "https://pandagame.app",
     "license": "Apache-2.0",
     "licenseFile": "../LICENSE",
     "category": "Utility",
