@@ -30,6 +30,29 @@ export default function App() {
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  useEffect(() => {
+    async function syncMirrorState() {
+      try {
+        const state = await desktopApi.state();
+        if (mirror.running && !state.running) setMessage("镜像窗口已退出");
+        setMirror(state);
+      } catch {
+        // A temporary status query failure should not interrupt an active mirror.
+      }
+    }
+
+    const handleFocus = () => { void syncMirrorState(); };
+    window.addEventListener("focus", handleFocus);
+    if (!mirror.running) return () => window.removeEventListener("focus", handleFocus);
+
+    const timer = window.setInterval(() => { void syncMirrorState(); }, 750);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [mirror.running]);
+
   const selected = useMemo(() => devices.find((device) => device.serial === options.serial), [devices, options.serial]);
   const ready = Boolean(environment?.adb.available && environment?.scrcpy.available && selected?.state === "device");
 
