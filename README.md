@@ -12,6 +12,7 @@
 - 默认传入 `--mouse-bind=++++:++++`，让 Shift 组合下的鼠标按键也完整透传
 - 默认通过 `--start-app=com.panda.mouse` 启动 Panda Mouse Pro，可在界面中关闭
 - 内置常用 scrcpy 快捷键速查
+- 支持中文和英文界面，自动跟随系统语言并记住用户选择
 - 默认使用主显示屏镜像，兼容 Panda Mouse Pro 当前工作方式
 - virtual display 参数模型已预留，但 UI 和后端均明确禁止启用
 
