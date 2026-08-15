@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Cable, CircleStop, Command, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { desktopApi } from "./api";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
 import pandaStudioMark from "./assets/panda-studio-mark.png";
@@ -72,7 +73,7 @@ export default function App() {
   return <main className="app-shell">
     <header>
       <div className="brand-mark"><img src={pandaStudioMark} alt="Panda Gaming Studio" /></div>
-      <div className="brand-copy"><h1>Panda Gaming Desktop</h1><p>借助开源项目 <a href="https://github.com/Genymobile/scrcpy" target="_blank" rel="noreferrer">scrcpy</a>，我们可以投射手机屏幕到电脑上，使用电脑的键鼠玩手机游戏！</p></div>
+      <div className="brand-copy"><h1>Panda Gaming Desktop</h1><p>借助开源项目 <a href="https://github.com/Genymobile/scrcpy" onClick={(event) => { event.preventDefault(); void openUrl("https://github.com/Genymobile/scrcpy"); }}>scrcpy</a>，我们可以投射手机屏幕到电脑上，使用电脑的键鼠玩手机游戏！</p></div>
       <span className={`status-chip ${mirror.running ? "online" : ""}`}><i />{mirror.running ? "镜像运行中" : "待机"}</span>
     </header>
 

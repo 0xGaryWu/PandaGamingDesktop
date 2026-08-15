@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "Default desktop window permissions",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://github.com/Genymobile/scrcpy" }]
+    }
+  ]
 }
