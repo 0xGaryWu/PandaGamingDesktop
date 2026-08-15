@@ -58,8 +58,9 @@ License information: https://github.com/libusb/libusb/blob/master/COPYING
 
 Source availability
 -------------------
-Panda Gaming Desktop does not modify these third-party executables. Source
-code and corresponding license information are available from the project
-links above. The exact upstream scrcpy portable archive used by each build is
-identified in tools/panda-tools.json.
-
+Panda Gaming Desktop does not modify the source code of these third-party
+components. On macOS, bundled executable files may be re-signed with the Panda
+Gaming Desktop Developer ID certificate to meet Apple's notarization
+requirements. Source code and corresponding license information are available
+from the project links above. The exact upstream scrcpy portable archive used
+by each build is identified in tools/panda-tools.json.

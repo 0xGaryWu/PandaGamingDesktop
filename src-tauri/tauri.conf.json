@@ -7,6 +7,7 @@
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
+    "beforeBundleCommand": "node scripts/sign-macos-tools.mjs",
     "frontendDist": "../dist"
   },
   "app": {
@@ -33,6 +34,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "macOS": {
+      "signingIdentity": "Developer ID Application: Beijing Guanshanjiyue Technology Co., Ltd. (Q348QPFLQ4)"
+    },
     "resources": ["tools/", "resources/THIRD_PARTY_NOTICES.txt"]
   }
 }
