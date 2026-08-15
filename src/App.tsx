@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Cable, CircleStop, Gamepad2, MonitorPlay, RefreshCw, Settings2, Smartphone, TriangleAlert } from "lucide-react";
+import { Cable, CircleStop, Command, Gamepad2, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert } from "lucide-react";
 import { desktopApi } from "./api";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
 
 const defaults: MirrorOptions = {
   serial: "", maxSize: 1920, videoBitRateMbps: 12, maxFps: 60,
   turnScreenOff: false, stayAwake: true, fullscreen: false,
-  borderless: false, audio: true, virtualDisplay: false
+  borderless: false, audio: true, alwaysOnTop: false,
+  showTouches: false, powerOffOnClose: false, virtualDisplay: false
 };
 
 export default function App() {
@@ -78,10 +79,34 @@ export default function App() {
           <Toggle label="保持设备唤醒" checked={options.stayAwake} onChange={(v) => setOption("stayAwake", v)} disabled={mirror.running}/>
           <Toggle label="启动后关闭手机屏幕" checked={options.turnScreenOff} onChange={(v) => setOption("turnScreenOff", v)} disabled={mirror.running}/>
           <Toggle label="无边框窗口" checked={options.borderless} onChange={(v) => setOption("borderless", v)} disabled={mirror.running}/>
+          <Toggle label="启动即全屏" checked={options.fullscreen} onChange={(v) => setOption("fullscreen", v)} disabled={mirror.running}/>
+          <Toggle label="窗口置顶" checked={options.alwaysOnTop} onChange={(v) => setOption("alwaysOnTop", v)} disabled={mirror.running}/>
+          <Toggle label="显示物理触点" checked={options.showTouches} onChange={(v) => setOption("showTouches", v)} disabled={mirror.running}/>
+          <Toggle label="关闭时熄灭手机屏幕" checked={options.powerOffOnClose} onChange={(v) => setOption("powerOffOnClose", v)} disabled={mirror.running}/>
         </div>
+        <div className="mapping-mode"><Keyboard size={17}/><MousePointer2 size={17}/><div><strong>键鼠映射模式</strong><p>启动时固定加入 <code>-K -M</code>，使用 UHID 模拟物理键盘和相对鼠标。</p></div><span>默认开启</span></div>
         <div className="experimental"><TriangleAlert size={18}/><div><strong>Virtual display 暂未开放</strong><p>已在后端参数模型中预留；待 Panda Mouse Pro 适配完善后再作为实验功能启用。</p></div><span>EXPERIMENTAL</span></div>
       </section>
     </div>
+
+    <section className="panel shortcuts-panel">
+      <div className="section-title"><div><Command size={18}/><h3>快捷键速查</h3></div><span>MOD = Command 或左 Alt</span></div>
+      <div className="shortcut-grid">
+        <Shortcut keys="Command" label="释放 / 捕获鼠标" />
+        <Shortcut keys="MOD + F" label="进入 / 退出全屏" />
+        <Shortcut keys="MOD + Q" label="退出镜像" />
+        <Shortcut keys="MOD + P" label="开关手机屏幕" />
+        <Shortcut keys="MOD + H" label="返回桌面" />
+        <Shortcut keys="MOD + B" label="返回上一级" />
+        <Shortcut keys="MOD + S" label="最近任务" />
+        <Shortcut keys="MOD + R" label="旋转手机屏幕" />
+        <Shortcut keys="MOD + ↑ / ↓" label="调节音量" />
+        <Shortcut keys="MOD + V" label="粘贴剪贴板" />
+        <Shortcut keys="MOD + K" label="打开物理键盘设置" />
+        <Shortcut keys="MOD + I" label="显示 / 隐藏 FPS" />
+      </div>
+      <p className="shortcut-note">在 macOS 上 Command 对应左侧 ⌘ 键；Windows 可使用左 Alt。鼠标映射模式下，左 Command、右 Command 或左 Alt 均可切换鼠标捕获。</p>
+    </section>
 
     <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? "停止镜像" : "启动镜像"}</button></footer>
   </main>;
@@ -90,3 +115,4 @@ export default function App() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="field"><span>{label}</span>{children}</label>; }
 function Toggle({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (value: boolean) => void; disabled: boolean }) { return <label className="toggle-row"><span>{label}</span><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} disabled={disabled}/><i /></label>; }
 function Tool({ label, info }: { label: string; info?: EnvironmentStatus["adb"] }) { return <div><span className={info?.available ? "dot-ok" : "dot-bad"}/><span>{label}</span><small>{info?.available ? info.version ?? "可用" : "未找到"}</small></div>; }
+function Shortcut({ keys, label }: { keys: string; label: string }) { return <div className="shortcut"><kbd>{keys}</kbd><span>{label}</span></div>; }

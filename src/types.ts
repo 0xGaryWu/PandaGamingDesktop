@@ -11,6 +11,9 @@ export type MirrorOptions = {
   fullscreen: boolean;
   borderless: boolean;
   audio: boolean;
+  alwaysOnTop: boolean;
+  showTouches: boolean;
+  powerOffOnClose: boolean;
   virtualDisplay: boolean;
 };
 export type MirrorState = { running: boolean; pid: number | null; serial: string | null };

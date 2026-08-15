@@ -50,6 +50,9 @@ struct MirrorOptions {
     fullscreen: bool,
     borderless: bool,
     audio: bool,
+    always_on_top: bool,
+    show_touches: bool,
+    power_off_on_close: bool,
     virtual_display: bool,
 }
 
@@ -204,6 +207,8 @@ fn start_mirror(
     command.args([
         "--serial",
         &options.serial,
+        "-K",
+        "-M",
         "--max-size",
         &options.max_size.to_string(),
         "--video-bit-rate",
@@ -227,6 +232,15 @@ fn start_mirror(
     }
     if !options.audio {
         command.arg("--no-audio");
+    }
+    if options.always_on_top {
+        command.arg("--always-on-top");
+    }
+    if options.show_touches {
+        command.arg("--show-touches");
+    }
+    if options.power_off_on_close {
+        command.arg("--power-off-on-close");
     }
     let child = command
         .stdin(Stdio::null())
