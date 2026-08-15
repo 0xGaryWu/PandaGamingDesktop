@@ -48,10 +48,8 @@ struct MirrorOptions {
     turn_screen_off: bool,
     stay_awake: bool,
     fullscreen: bool,
-    borderless: bool,
     audio: bool,
     always_on_top: bool,
-    show_touches: bool,
     power_off_on_close: bool,
     virtual_display: bool,
 }
@@ -209,6 +207,7 @@ fn start_mirror(
         &options.serial,
         "-K",
         "-M",
+        "--mouse-bind=++++:++++",
         "--max-size",
         &options.max_size.to_string(),
         "--video-bit-rate",
@@ -227,17 +226,11 @@ fn start_mirror(
     if options.fullscreen {
         command.arg("--fullscreen");
     }
-    if options.borderless {
-        command.arg("--window-borderless");
-    }
     if !options.audio {
         command.arg("--no-audio");
     }
     if options.always_on_top {
         command.arg("--always-on-top");
-    }
-    if options.show_touches {
-        command.arg("--show-touches");
     }
     if options.power_off_on_close {
         command.arg("--power-off-on-close");

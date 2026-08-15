@@ -6,8 +6,8 @@ import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./ty
 const defaults: MirrorOptions = {
   serial: "", maxSize: 1920, videoBitRateMbps: 12, maxFps: 60,
   turnScreenOff: false, stayAwake: true, fullscreen: false,
-  borderless: false, audio: true, alwaysOnTop: false,
-  showTouches: false, powerOffOnClose: false, virtualDisplay: false
+  audio: true, alwaysOnTop: false,
+  powerOffOnClose: false, virtualDisplay: false
 };
 
 export default function App() {
@@ -100,14 +100,12 @@ export default function App() {
         <div className="toggles">
           <Toggle label="声音转发" checked={options.audio} onChange={(v) => setOption("audio", v)} disabled={mirror.running}/>
           <Toggle label="保持设备唤醒" checked={options.stayAwake} onChange={(v) => setOption("stayAwake", v)} disabled={mirror.running}/>
-          <Toggle label="启动后关闭手机屏幕" checked={options.turnScreenOff} onChange={(v) => setOption("turnScreenOff", v)} disabled={mirror.running}/>
-          <Toggle label="无边框窗口" checked={options.borderless} onChange={(v) => setOption("borderless", v)} disabled={mirror.running}/>
           <Toggle label="启动即全屏" checked={options.fullscreen} onChange={(v) => setOption("fullscreen", v)} disabled={mirror.running}/>
           <Toggle label="窗口置顶" checked={options.alwaysOnTop} onChange={(v) => setOption("alwaysOnTop", v)} disabled={mirror.running}/>
-          <Toggle label="显示物理触点" checked={options.showTouches} onChange={(v) => setOption("showTouches", v)} disabled={mirror.running}/>
+          <Toggle label="启动后关闭手机屏幕" checked={options.turnScreenOff} onChange={(v) => setOption("turnScreenOff", v)} disabled={mirror.running}/>
           <Toggle label="关闭时熄灭手机屏幕" checked={options.powerOffOnClose} onChange={(v) => setOption("powerOffOnClose", v)} disabled={mirror.running}/>
         </div>
-        <div className="mapping-mode"><Keyboard size={17}/><MousePointer2 size={17}/><div><strong>键鼠映射模式</strong><p>启动时固定加入 <code>-K -M</code>，使用 UHID 模拟物理键盘和相对鼠标。</p></div><span>默认开启</span></div>
+        <div className="mapping-mode"><Keyboard size={17}/><MousePointer2 size={17}/><div><strong>键鼠映射模式</strong><p>默认使用 <code>-K -M</code> 与 <code>--mouse-bind=++++:++++</code>，键盘和全部鼠标按键直接发送给手机。</p></div><span>默认开启</span></div>
         <div className="experimental"><TriangleAlert size={18}/><div><strong>Virtual display 暂未开放</strong><p>已在后端参数模型中预留；待 Panda Mouse Pro 适配完善后再作为实验功能启用。</p></div><span>EXPERIMENTAL</span></div>
       </section>
     </div>

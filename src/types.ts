@@ -9,10 +9,8 @@ export type MirrorOptions = {
   turnScreenOff: boolean;
   stayAwake: boolean;
   fullscreen: boolean;
-  borderless: boolean;
   audio: boolean;
   alwaysOnTop: boolean;
-  showTouches: boolean;
   powerOffOnClose: boolean;
   virtualDisplay: boolean;
 };
