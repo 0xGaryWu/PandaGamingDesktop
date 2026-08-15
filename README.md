@@ -1,7 +1,7 @@
 # Panda Gaming Desktop
 
-A lightweight desktop app for mirroring and controlling Android devices with a
-keyboard and mouse. Built with Tauri, React, and TypeScript, and powered by
+A desktop companion built for Panda Mouse Pro, bringing Android games to your
+computer with keyboard and mouse controls. Powered by the open-source project
 [scrcpy](https://github.com/Genymobile/scrcpy).
 
 ![Panda Gaming Desktop interface](screenshot.png)
