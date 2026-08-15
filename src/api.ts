@@ -4,6 +4,7 @@ import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./ty
 export const desktopApi = {
   environment: () => invoke<EnvironmentStatus>("check_environment"),
   devices: () => invoke<Device[]>("list_devices"),
+  activatePmp: (serial: string) => invoke<void>("activate_pmp", { serial }),
   start: (options: MirrorOptions) => invoke<MirrorState>("start_mirror", { options }),
   stop: () => invoke<MirrorState>("stop_mirror"),
   state: () => invoke<MirrorState>("mirror_state")

@@ -48,6 +48,9 @@ const zh = {
   shortcutNote: "在 macOS 上 Command 对应左侧 ⌘ 键；Windows 可使用左 Alt。鼠标映射模式下，左 Command、右 Command 或左 Alt 均可切换鼠标捕获。",
   startMirror: "启动镜像",
   stopMirror: "停止镜像",
+  activatePmp: "激活 Panda Mouse Pro",
+  activatingPmp: "正在启动并激活 Panda Mouse Pro…",
+  activationCommandCompleted: "Panda Mouse Pro 激活命令已执行",
   checkingEnvironment: "正在检查运行环境…",
   devicesFound: "已发现 {count} 台可用设备",
   noDevices: "未发现已授权的 Android 设备",
@@ -57,6 +60,8 @@ const zh = {
   language: "语言",
   adbMissing: "未找到 adb，请重新安装 Panda Gaming Desktop",
   adbRunFailed: "无法运行 adb：{detail}",
+  launchPmpFailed: "无法启动 Panda Mouse Pro：{detail}",
+  activatePmpFailed: "Panda Mouse Pro 激活失败：{detail}",
   selectDeviceError: "请先选择设备",
   virtualDisplayError: "Virtual display 仍为实验功能，当前版本尚未开放",
   scrcpyMissing: "未找到 scrcpy，请重新安装 Panda Gaming Desktop",
@@ -114,6 +119,9 @@ const en: Record<keyof typeof zh, string> = {
   shortcutNote: "On macOS, Command means the left ⌘ key; on Windows, use Left Alt. In mouse mapping mode, Left Command, Right Command, or Left Alt toggles mouse capture.",
   startMirror: "Start mirroring",
   stopMirror: "Stop mirroring",
+  activatePmp: "Activate Panda Mouse Pro",
+  activatingPmp: "Starting and activating Panda Mouse Pro…",
+  activationCommandCompleted: "Panda Mouse Pro activation command completed",
   checkingEnvironment: "Checking environment…",
   devicesFound: "Found {count} available device(s)",
   noDevices: "No authorized Android devices found",
@@ -123,6 +131,8 @@ const en: Record<keyof typeof zh, string> = {
   language: "Language",
   adbMissing: "adb was not found. Please reinstall Panda Gaming Desktop.",
   adbRunFailed: "Could not run adb: {detail}",
+  launchPmpFailed: "Could not open Panda Mouse Pro: {detail}",
+  activatePmpFailed: "Could not activate Panda Mouse Pro: {detail}",
   selectDeviceError: "Select a device first.",
   virtualDisplayError: "Virtual display is still experimental and unavailable in this version.",
   scrcpyMissing: "scrcpy was not found. Please reinstall Panda Gaming Desktop.",
@@ -161,6 +171,8 @@ export function localizeBackendError(locale: Locale, error: unknown) {
   if (exact[raw]) return translate(locale, exact[raw]);
   const prefixes: Array<[string, MessageKey]> = [
     ["无法运行 adb: ", "adbRunFailed"],
+    ["无法启动 Panda Mouse Pro: ", "launchPmpFailed"],
+    ["Panda Mouse Pro 激活失败: ", "activatePmpFailed"],
     ["启动 scrcpy 失败: ", "startFailed"],
     ["停止 scrcpy 失败: ", "stopFailed"]
   ];

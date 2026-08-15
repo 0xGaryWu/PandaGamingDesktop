@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
+    thread,
+    time::Duration,
 };
 use tauri::{path::BaseDirectory, AppHandle, Manager, State};
 
@@ -184,6 +186,73 @@ fn parse_device(line: &str) -> Option<Device> {
     Some(device)
 }
 
+fn command_error(output: &std::process::Output) -> String {
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    if !stderr.is_empty() {
+        return stderr;
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if stdout.is_empty() {
+        format!("exit code {}", output.status.code().unwrap_or(-1))
+    } else {
+        stdout
+    }
+}
+
+fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
+    if serial.trim().is_empty() {
+        return Err("请先选择设备".into());
+    }
+    let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
+    let launch = Command::new(&adb)
+        .args([
+            "-s",
+            &serial,
+            "shell",
+            "monkey",
+            "-p",
+            "com.panda.mouse",
+            "-c",
+            "android.intent.category.LAUNCHER",
+            "1",
+        ])
+        .output()
+        .map_err(|error| format!("无法启动 Panda Mouse Pro: {error}"))?;
+    if !launch.status.success() {
+        return Err(format!(
+            "无法启动 Panda Mouse Pro: {}",
+            command_error(&launch)
+        ));
+    }
+
+    thread::sleep(Duration::from_secs(3));
+
+    let activation = Command::new(adb)
+        .args([
+            "-s",
+            &serial,
+            "shell",
+            "sh",
+            "/sdcard/Android/data/com.panda.mouse/files/scripts/activate.sh",
+        ])
+        .output()
+        .map_err(|error| format!("Panda Mouse Pro 激活失败: {error}"))?;
+    if !activation.status.success() {
+        return Err(format!(
+            "Panda Mouse Pro 激活失败: {}",
+            command_error(&activation)
+        ));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn activate_pmp(serial: String, app: AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || activate_pmp_blocking(serial, app))
+        .await
+        .map_err(|error| format!("Panda Mouse Pro 激活失败: {error}"))?
+}
+
 #[tauri::command]
 fn start_mirror(
     options: MirrorOptions,
@@ -327,6 +396,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_environment,
             list_devices,
+            activate_pmp,
             start_mirror,
             stop_mirror,
             mirror_state

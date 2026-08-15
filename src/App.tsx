@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Cable, CircleStop, Command, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert } from "lucide-react";
+import { Cable, CircleStop, Command, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert, Zap } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { desktopApi } from "./api";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
@@ -67,6 +67,7 @@ export default function App() {
 
   const selected = useMemo(() => devices.find((device) => device.serial === options.serial), [devices, options.serial]);
   const ready = Boolean(environment?.adb.available && environment?.scrcpy.available && selected?.state === "device");
+  const canActivatePmp = Boolean(environment?.adb.available && selected?.state === "device");
 
   async function toggleMirror() {
     setBusy(true);
@@ -74,6 +75,20 @@ export default function App() {
       const state = mirror.running ? await desktopApi.stop() : await desktopApi.start(options);
       setMirror(state); setNotice(state.running ? { key: "mirrorStarted", values: { pid: state.pid ?? "—" } } : { key: "mirrorStopped" });
     } catch (error) { setNotice({ raw: localizeBackendError(locale, error) }); } finally { setBusy(false); }
+  }
+
+  async function activatePmp() {
+    if (!options.serial) return;
+    setBusy(true);
+    setNotice({ key: "activatingPmp" });
+    try {
+      await desktopApi.activatePmp(options.serial);
+      setNotice({ key: "activationCommandCompleted" });
+    } catch (error) {
+      setNotice({ raw: localizeBackendError(locale, error) });
+    } finally {
+      setBusy(false);
+    }
   }
 
   function setOption<K extends keyof MirrorOptions>(key: K, value: MirrorOptions[K]) {
@@ -139,7 +154,7 @@ export default function App() {
       <p className="shortcut-note">{t("shortcutNote")}</p>
     </section>
 
-    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t("startMirror")}</button></footer>
+    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void activatePmp()} disabled={busy || !canActivatePmp}><Zap size={18}/>{t("activatePmp")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t("startMirror")}</button></div></footer>
   </main>;
 }
 
