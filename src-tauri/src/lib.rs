@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{
+    ffi::OsStr,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
@@ -64,6 +65,22 @@ struct MirrorState {
     serial: Option<String>,
 }
 
+fn hidden_command<S: AsRef<OsStr>>(program: S) -> Command {
+    let command = Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let mut command = command;
+        command.creation_flags(CREATE_NO_WINDOW);
+        command
+    }
+    #[cfg(not(windows))]
+    {
+        command
+    }
+}
+
 fn candidate_paths(tool: &str, app: &AppHandle) -> Vec<PathBuf> {
     let executable = if cfg!(windows) {
         format!("{tool}.exe")
@@ -102,7 +119,7 @@ fn candidate_paths(tool: &str, app: &AppHandle) -> Vec<PathBuf> {
 
 fn resolve_tool(tool: &str, app: &AppHandle) -> Option<PathBuf> {
     candidate_paths(tool, app).into_iter().find(|candidate| {
-        Command::new(candidate)
+        hidden_command(candidate)
             .arg("--version")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -119,7 +136,7 @@ fn tool_info(tool: &str, app: &AppHandle) -> ToolInfo {
             version: None,
         };
     };
-    let output = Command::new(&path).arg("--version").output().ok();
+    let output = hidden_command(&path).arg("--version").output().ok();
     let version = output
         .map(|out| {
             let text = if out.stdout.is_empty() {
@@ -148,7 +165,7 @@ fn check_environment(app: AppHandle) -> EnvironmentStatus {
 #[tauri::command]
 fn list_devices(app: AppHandle) -> Result<Vec<Device>, String> {
     let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
-    let output = Command::new(adb)
+    let output = hidden_command(adb)
         .args(["devices", "-l"])
         .output()
         .map_err(|error| format!("无法运行 adb: {error}"))?;
@@ -204,7 +221,7 @@ fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
         return Err("请先选择设备".into());
     }
     let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
-    let launch = Command::new(&adb)
+    let launch = hidden_command(&adb)
         .args([
             "-s",
             &serial,
@@ -227,7 +244,7 @@ fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
 
     thread::sleep(Duration::from_secs(3));
 
-    let activation = Command::new(adb)
+    let activation = hidden_command(adb)
         .args([
             "-s",
             &serial,
@@ -280,7 +297,7 @@ fn start_mirror(
         }
         *guard = None;
     }
-    let mut command = Command::new(scrcpy);
+    let mut command = hidden_command(scrcpy);
     command.env("ADB", adb);
     if let Ok(server) = app
         .path()
