@@ -11,7 +11,7 @@ export type MirrorOptions = {
   fullscreen: boolean;
   audio: boolean;
   alwaysOnTop: boolean;
-  powerOffOnClose: boolean;
+  launchPandaMousePro: boolean;
   virtualDisplay: boolean;
 };
 export type MirrorState = { running: boolean; pid: number | null; serial: string | null };

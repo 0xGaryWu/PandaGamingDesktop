@@ -50,7 +50,7 @@ struct MirrorOptions {
     fullscreen: bool,
     audio: bool,
     always_on_top: bool,
-    power_off_on_close: bool,
+    launch_panda_mouse_pro: bool,
     virtual_display: bool,
 }
 
@@ -251,8 +251,8 @@ fn start_mirror(
     if options.always_on_top {
         command.arg("--always-on-top");
     }
-    if options.power_off_on_close {
-        command.arg("--power-off-on-close");
+    if options.launch_panda_mouse_pro {
+        command.arg("--start-app=com.panda.mouse");
     }
     let child = command
         .stdin(Stdio::null())
