@@ -1,0 +1,65 @@
+Panda Gaming Desktop - Third-Party Software Notices
+===================================================
+
+Panda Gaming Desktop distributes the official portable scrcpy package so
+that users can mirror and control Android devices without installing adb or
+scrcpy separately. The exact bundled package, version, source URL and SHA-256
+digest are recorded in tools/panda-tools.json inside the application bundle.
+
+The following notices apply to components that may be included in that
+official package for the target operating system. This file is provided for
+attribution purposes and does not alter the license terms of those projects.
+
+
+scrcpy
+------
+Project: https://github.com/Genymobile/scrcpy
+Copyright (C) 2018 Genymobile
+Copyright (C) 2018-2026 Romain Vimont
+License: Apache License 2.0
+
+The complete license text supplied by the scrcpy distribution is included as
+tools/LICENSE inside the application bundle.
+
+
+Android Debug Bridge (adb)
+--------------------------
+Project: https://android.googlesource.com/platform/packages/modules/adb/
+Copyright: The Android Open Source Project contributors
+License: Apache License 2.0
+License text: https://www.apache.org/licenses/LICENSE-2.0
+
+
+FFmpeg libraries
+----------------
+Project: https://ffmpeg.org/
+Copyright: FFmpeg project contributors
+License: GNU Lesser General Public License 2.1 or later; some builds or
+optional components may be covered by the GNU General Public License.
+License information: https://ffmpeg.org/legal.html
+Source code: https://ffmpeg.org/download.html#get-sources
+
+
+Simple DirectMedia Layer (SDL)
+------------------------------
+Project: https://www.libsdl.org/
+Copyright: SDL contributors
+License: zlib License
+License information: https://github.com/libsdl-org/SDL/blob/main/LICENSE.txt
+
+
+libusb
+------
+Project: https://libusb.info/
+Copyright: libusb contributors
+License: GNU Lesser General Public License 2.1 or later
+License information: https://github.com/libusb/libusb/blob/master/COPYING
+
+
+Source availability
+-------------------
+Panda Gaming Desktop does not modify these third-party executables. Source
+code and corresponding license information are available from the project
+links above. The exact upstream scrcpy portable archive used by each build is
+identified in tools/panda-tools.json.
+

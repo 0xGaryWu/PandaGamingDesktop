@@ -33,6 +33,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["tools/"]
+    "resources": ["tools/", "resources/THIRD_PARTY_NOTICES.txt"]
   }
 }
