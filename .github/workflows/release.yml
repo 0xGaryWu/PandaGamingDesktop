@@ -1,0 +1,73 @@
+name: Build desktop release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            runner: windows-2025
+            args: --bundles nsis
+          - name: Linux x64
+            runner: ubuntu-24.04
+            args: --bundles appimage,deb
+          - name: macOS Apple Silicon
+            runner: macos-15
+            args: --bundles dmg
+          - name: macOS Intel
+            runner: macos-15-intel
+            args: --bundles dmg
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Download and verify bundled adb/scrcpy
+        run: npm run tools:prepare
+
+      - name: Build installers and upload GitHub Release assets
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Panda Gaming Desktop v__VERSION__
+          releaseBody: |
+            Panda Gaming Desktop desktop installers.
+
+            adb, scrcpy and scrcpy-server are included. No separate installation is required.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

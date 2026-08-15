@@ -4,7 +4,7 @@ use std::{
     process::{Child, Command, Stdio},
     sync::Mutex,
 };
-use tauri::State;
+use tauri::{path::BaseDirectory, AppHandle, Manager, State};
 
 #[derive(Default)]
 struct MirrorProcess(Mutex<Option<RunningMirror>>);
@@ -62,13 +62,20 @@ struct MirrorState {
     serial: Option<String>,
 }
 
-fn candidate_paths(tool: &str) -> Vec<PathBuf> {
+fn candidate_paths(tool: &str, app: &AppHandle) -> Vec<PathBuf> {
     let executable = if cfg!(windows) {
         format!("{tool}.exe")
     } else {
         tool.to_string()
     };
-    let mut paths = vec![PathBuf::from(&executable)];
+    let mut paths = Vec::new();
+    if let Ok(bundled) = app
+        .path()
+        .resolve(format!("tools/{executable}"), BaseDirectory::Resource)
+    {
+        paths.push(bundled);
+    }
+    paths.push(PathBuf::from(&executable));
     if cfg!(target_os = "macos") {
         paths
             .extend(["/opt/homebrew/bin", "/usr/local/bin"].map(|base| Path::new(base).join(tool)));
@@ -91,8 +98,8 @@ fn candidate_paths(tool: &str) -> Vec<PathBuf> {
     paths
 }
 
-fn resolve_tool(tool: &str) -> Option<PathBuf> {
-    candidate_paths(tool).into_iter().find(|candidate| {
+fn resolve_tool(tool: &str, app: &AppHandle) -> Option<PathBuf> {
+    candidate_paths(tool, app).into_iter().find(|candidate| {
         Command::new(candidate)
             .arg("--version")
             .stdout(Stdio::null())
@@ -102,8 +109,8 @@ fn resolve_tool(tool: &str) -> Option<PathBuf> {
     })
 }
 
-fn tool_info(tool: &str) -> ToolInfo {
-    let Some(path) = resolve_tool(tool) else {
+fn tool_info(tool: &str, app: &AppHandle) -> ToolInfo {
+    let Some(path) = resolve_tool(tool, app) else {
         return ToolInfo {
             available: false,
             path: None,
@@ -129,16 +136,16 @@ fn tool_info(tool: &str) -> ToolInfo {
 }
 
 #[tauri::command]
-fn check_environment() -> EnvironmentStatus {
+fn check_environment(app: AppHandle) -> EnvironmentStatus {
     EnvironmentStatus {
-        adb: tool_info("adb"),
-        scrcpy: tool_info("scrcpy"),
+        adb: tool_info("adb", &app),
+        scrcpy: tool_info("scrcpy", &app),
     }
 }
 
 #[tauri::command]
-fn list_devices() -> Result<Vec<Device>, String> {
-    let adb = resolve_tool("adb").ok_or("未找到 adb，请安装 Android Platform Tools")?;
+fn list_devices(app: AppHandle) -> Result<Vec<Device>, String> {
+    let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
     let output = Command::new(adb)
         .args(["devices", "-l"])
         .output()
@@ -181,6 +188,7 @@ fn parse_device(line: &str) -> Option<Device> {
 fn start_mirror(
     options: MirrorOptions,
     process: State<'_, MirrorProcess>,
+    app: AppHandle,
 ) -> Result<MirrorState, String> {
     if options.serial.trim().is_empty() {
         return Err("请先选择设备".into());
@@ -188,7 +196,9 @@ fn start_mirror(
     if options.virtual_display {
         return Err("Virtual display 仍为实验功能，当前版本尚未开放".into());
     }
-    let scrcpy = resolve_tool("scrcpy").ok_or("未找到 scrcpy，请先安装并确保它位于 PATH 中")?;
+    let scrcpy =
+        resolve_tool("scrcpy", &app).ok_or("未找到 scrcpy，请重新安装 Panda Gaming Desktop")?;
+    let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
     let mut guard = process.0.lock().map_err(|_| "镜像进程状态不可用")?;
     if let Some(running) = guard.as_mut() {
         if running
@@ -202,6 +212,15 @@ fn start_mirror(
         *guard = None;
     }
     let mut command = Command::new(scrcpy);
+    command.env("ADB", adb);
+    if let Ok(server) = app
+        .path()
+        .resolve("tools/scrcpy-server", BaseDirectory::Resource)
+    {
+        if server.is_file() {
+            command.env("SCRCPY_SERVER_PATH", server);
+        }
+    }
     command.args([
         "--serial",
         &options.serial,

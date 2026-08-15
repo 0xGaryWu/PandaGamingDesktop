@@ -16,7 +16,7 @@
 
 ## 本地开发
 
-需要 Node.js、Rust，以及已安装的 Android Platform Tools 和 scrcpy。
+需要 Node.js 和 Rust。直接运行开发模式时可以使用系统已安装的 Android Platform Tools 和 scrcpy：
 
 ```bash
 npm install
@@ -29,20 +29,44 @@ npm run tauri dev
 npm run dev
 ```
 
-生产构建：
+## 正式打包
+
+在当前系统上生成包含 adb、scrcpy 和 scrcpy-server 的安装包：
 
 ```bash
-npm run tauri build
+npm run package
 ```
+
+脚本会自动完成以下工作：
+
+1. 根据 Windows/Linux/macOS 和 CPU 架构选择 scrcpy 4.1 官方便携包。
+2. 下载并校验固定的 SHA-256。
+3. 将官方包中的 adb、scrcpy、scrcpy-server 及运行库完整放入 Tauri resources。
+4. 调用 `tauri build` 生成当前平台安装包。
+
+安装包输出位于 `src-tauri/target/release/bundle/`。Tauri 不支持从一个操作系统直接生成所有平台的原生安装包；仓库内的 `.github/workflows/release.yml` 会并行构建：
+
+- Windows x64：NSIS `.exe`
+- Linux x64：AppImage 和 `.deb`
+- macOS Apple Silicon：`.dmg`
+- macOS Intel：`.dmg`
+
+推送 `v*` 标签或在 GitHub Actions 手动运行 **Build desktop release** 后，构建结果会上传到同一个草稿 GitHub Release，确认无误后即可发布。
 
 ## 工具查找
 
-应用首先按系统 `PATH` 查找命令，另外支持以下常见位置：
+正式安装包优先使用其 resources 中的工具。开发构建没有运行 `npm run tools:prepare` 时，应用会按系统 `PATH` 查找命令，另外支持以下常见位置：
 
 - macOS：`/opt/homebrew/bin`、`/usr/local/bin`、`~/Library/Android/sdk/platform-tools`
 - Windows：`%LOCALAPPDATA%/Android/Sdk/platform-tools`
 
-正式分发时可进一步选择把对应平台的 adb/scrcpy 作为 Tauri sidecar 一起打包，换取开箱即用；当前版本优先复用本机安装，以保持应用安装包小巧。
+scrcpy 官方便携包中已经包含对应平台的 adb 和匹配版本的 scrcpy-server，因此正式分发不要求用户安装 Homebrew、Android Studio或配置 PATH。
+
+### 发布前注意事项
+
+- macOS 未配置 Apple Developer 签名和公证时，用户会遇到 Gatekeeper 警告。
+- Windows 未配置代码签名证书时，SmartScreen 可能显示“未知发布者”。
+- 首次发布前应分别在干净的 Windows、Linux、Intel Mac 和 Apple Silicon Mac 上测试安装、USB 调试授权、启动镜像及卸载。
 
 ## Virtual display 路线
 
