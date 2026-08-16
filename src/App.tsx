@@ -39,6 +39,43 @@ export default function App() {
   useEffect(() => { void refresh(); }, [refresh]);
 
   useEffect(() => {
+    let cancelled = false;
+    let refreshing = false;
+
+    async function refreshDevicesSilently() {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        const found = await desktopApi.devices();
+        if (cancelled) return;
+        setDevices(found);
+        const usable = found.filter((device) => device.state === "device");
+        setOptions((current) => ({
+          ...current,
+          serial: usable.some((device) => device.serial === current.serial)
+            ? current.serial
+            : usable[0]?.serial ?? ""
+        }));
+      } catch {
+        // Keep the last known device list during transient adb failures.
+      } finally {
+        refreshing = false;
+      }
+    }
+
+    const handleFocus = () => { void refreshDevicesSilently(); };
+    const timer = window.setInterval(() => {
+      if (document.hasFocus()) void refreshDevicesSilently();
+    }, 2000);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem("panda-locale", locale);
     document.documentElement.lang = locale;
   }, [locale]);
