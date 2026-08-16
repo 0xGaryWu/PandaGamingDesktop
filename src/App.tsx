@@ -163,7 +163,7 @@ export default function App() {
       <p className="shortcut-note">{t("shortcutNote")}</p>
     </section>
 
-    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void activatePmp()} disabled={busy || !canActivatePmp}><Zap size={18}/>{t("activatePmp")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t("startMirror")}</button></div></footer>
+    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void activatePmp()} disabled={busy || !canActivatePmp}><Zap size={18}/>{t("activatePmp")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
   </main>;
 }
 
