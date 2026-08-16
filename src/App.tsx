@@ -5,6 +5,7 @@ import { desktopApi } from "./api";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
 import { detectLocale, localizeBackendError, translate, type Locale, type MessageKey } from "./i18n";
 import pandaStudioMark from "./assets/panda-studio-mark.png";
+import packageMetadata from "../package.json";
 
 type Notice = { key: MessageKey; values?: Record<string, string | number> } | { raw: string };
 
@@ -200,7 +201,7 @@ export default function App() {
       <p className="shortcut-note">{t("shortcutNote")}</p>
     </section>
 
-    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void activatePmp()} disabled={busy || !canActivatePmp}><Zap size={18}/>{t("activatePmp")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
+    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-meta"><span>v{packageMetadata.version}</span><button type="button" title={t("officialWebsite")} onClick={() => void openUrl("https://pandagame.app")}>pandagame.app</button></div><div className="footer-actions"><button className="secondary" onClick={() => void activatePmp()} disabled={busy || !canActivatePmp}><Zap size={18}/>{t("activatePmp")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
   </main>;
 }
 
