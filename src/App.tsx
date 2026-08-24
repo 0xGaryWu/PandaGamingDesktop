@@ -21,7 +21,7 @@ export default function App() {
   const [environment, setEnvironment] = useState<EnvironmentStatus | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [options, setOptions] = useState(defaults);
-  const [mirror, setMirror] = useState<MirrorState>({ running: false, pid: null, serial: null, error: null });
+  const [mirror, setMirror] = useState<MirrorState>({ running: false, pid: null, serial: null });
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>({ key: "checkingEnvironment" });
   const t = useCallback((key: MessageKey, values?: Record<string, string | number>) => translate(locale, key, values), [locale]);
@@ -85,9 +85,7 @@ export default function App() {
     async function syncMirrorState() {
       try {
         const state = await desktopApi.state();
-        if (mirror.running && !state.running) {
-          setNotice(state.error ? { key: "mirrorWindowExitedWithError", values: { detail: state.error } } : { key: "mirrorWindowExited" });
-        }
+        if (mirror.running && !state.running) setNotice({ key: "mirrorWindowExited" });
         setMirror(state);
       } catch {
         // A temporary status query failure should not interrupt an active mirror.

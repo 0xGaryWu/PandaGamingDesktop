@@ -14,4 +14,4 @@ export type MirrorOptions = {
   launchPandaMousePro: boolean;
   virtualDisplay: boolean;
 };
-export type MirrorState = { running: boolean; pid: number | null; serial: string | null; error: string | null };
+export type MirrorState = { running: boolean; pid: number | null; serial: string | null };
