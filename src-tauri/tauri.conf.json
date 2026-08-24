@@ -55,6 +55,11 @@
     "macOS": {
       "signingIdentity": "Developer ID Application: Beijing Guanshanjiyue Technology Co., Ltd. (Q348QPFLQ4)"
     },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/installer-hooks.nsh"
+      }
+    },
     "resources": {
       "tools/": "tools/",
       "resources/panda-scrcpy.vbs": "panda-scrcpy.vbs",
