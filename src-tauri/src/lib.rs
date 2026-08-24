@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
+    fs,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
@@ -15,6 +16,7 @@ struct MirrorProcess(Mutex<Option<RunningMirror>>);
 struct RunningMirror {
     child: Child,
     serial: String,
+    log_path: Option<PathBuf>,
 }
 
 #[derive(Serialize)]
@@ -63,6 +65,32 @@ struct MirrorState {
     running: bool,
     pid: Option<u32>,
     serial: Option<String>,
+    error: Option<String>,
+}
+
+fn mirror_exit_error(
+    status: std::process::ExitStatus,
+    log_path: Option<&Path>,
+    serial: &str,
+) -> Option<String> {
+    let log = log_path
+        .and_then(|path| {
+            fs::read_to_string(path)
+                .ok()
+                .map(|contents| (path, contents))
+        })
+        .filter(|(_, contents)| !contents.trim().is_empty())
+        .map(|(path, contents)| {
+            let lines: Vec<_> = contents.lines().collect();
+            let start = lines.len().saturating_sub(12);
+            let tail = lines[start..].join("\n").replace(serial, "<device>");
+            format!("{}\nLog: {}", tail.trim(), path.display())
+        });
+
+    log.or_else(|| {
+        (!status.success())
+            .then(|| format!("scrcpy exited with code {}", status.code().unwrap_or(-1)))
+    })
 }
 
 fn hidden_command<S: AsRef<OsStr>>(program: S) -> Command {
@@ -363,25 +391,33 @@ fn start_mirror(
     }
 
     #[cfg(windows)]
-    let mut command = {
+    let (mut command, log_path) = {
         let wrapper = app
             .path()
             .resolve("panda-scrcpy.vbs", BaseDirectory::Resource)
             .map_err(|error| format!("无法定位 Windows scrcpy 启动器: {error}"))?;
         let tools_dir = scrcpy.parent().ok_or("无法定位 scrcpy 工具目录")?;
+        let log_dir = app
+            .path()
+            .app_log_dir()
+            .map_err(|error| format!("无法定位应用日志目录: {error}"))?;
+        fs::create_dir_all(&log_dir).map_err(|error| format!("无法创建应用日志目录: {error}"))?;
+        let log_path = log_dir.join("panda-scrcpy.log");
+        let _ = fs::remove_file(&log_path);
         let mut command = Command::new("wscript.exe");
         command
             .args(["//B", "//NoLogo"])
             .arg(wrapper)
+            .arg(&log_path)
             .args(&arguments)
             .current_dir(tools_dir);
-        command
+        (command, Some(log_path))
     };
     #[cfg(not(windows))]
-    let mut command = {
+    let (mut command, log_path) = {
         let mut command = hidden_command(&scrcpy);
         command.args(&arguments);
-        command
+        (command, None)
     };
 
     command.env("ADB", &adb);
@@ -403,10 +439,12 @@ fn start_mirror(
         running: true,
         pid: Some(child.id()),
         serial: Some(options.serial.clone()),
+        error: None,
     };
     *guard = Some(RunningMirror {
         child,
         serial: options.serial,
+        log_path,
     });
     Ok(state)
 }
@@ -442,6 +480,7 @@ fn stop_mirror(process: State<'_, MirrorProcess>) -> Result<MirrorState, String>
         running: false,
         pid: None,
         serial: None,
+        error: None,
     })
 }
 
@@ -453,25 +492,28 @@ fn mirror_state(process: State<'_, MirrorProcess>) -> Result<MirrorState, String
             running: false,
             pid: None,
             serial: None,
+            error: None,
         });
     };
-    if running
+    if let Some(status) = running
         .child
         .try_wait()
         .map_err(|error| error.to_string())?
-        .is_some()
     {
+        let error = mirror_exit_error(status, running.log_path.as_deref(), &running.serial);
         *guard = None;
         return Ok(MirrorState {
             running: false,
             pid: None,
             serial: None,
+            error,
         });
     }
     Ok(MirrorState {
         running: true,
         pid: Some(running.child.id()),
         serial: Some(running.serial.clone()),
+        error: None,
     })
 }
 
