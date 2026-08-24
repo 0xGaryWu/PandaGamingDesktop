@@ -392,10 +392,6 @@ fn start_mirror(
 
     #[cfg(windows)]
     let (mut command, log_path) = {
-        let wrapper = app
-            .path()
-            .resolve("panda-scrcpy.vbs", BaseDirectory::Resource)
-            .map_err(|error| format!("无法定位 Windows scrcpy 启动器: {error}"))?;
         let tools_dir = scrcpy.parent().ok_or("无法定位 scrcpy 工具目录")?;
         let log_dir = app
             .path()
@@ -403,36 +399,43 @@ fn start_mirror(
             .map_err(|error| format!("无法定位应用日志目录: {error}"))?;
         fs::create_dir_all(&log_dir).map_err(|error| format!("无法创建应用日志目录: {error}"))?;
         let log_path = log_dir.join("panda-scrcpy.log");
-        let _ = fs::remove_file(&log_path);
-        let mut command = Command::new("wscript.exe");
+        let log_file = fs::File::create(&log_path)
+            .map_err(|error| format!("无法创建 scrcpy 日志: {error}"))?;
+        let log_stdout = log_file
+            .try_clone()
+            .map_err(|error| format!("无法打开 scrcpy 日志: {error}"))?;
+        let mut command = hidden_command(&scrcpy);
         command
-            .args(["//B", "//NoLogo"])
-            .arg(wrapper)
-            .arg(&log_path)
             .args(&arguments)
-            .current_dir(tools_dir);
+            .current_dir(tools_dir)
+            .stdout(Stdio::from(log_stdout))
+            .stderr(Stdio::from(log_file));
         (command, Some(log_path))
     };
     #[cfg(not(windows))]
     let (mut command, log_path) = {
         let mut command = hidden_command(&scrcpy);
-        command.args(&arguments);
+        command
+            .args(&arguments)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
         (command, None)
     };
 
     command.env("ADB", &adb);
-    if let Ok(server) = app
-        .path()
-        .resolve("tools/scrcpy-server", BaseDirectory::Resource)
+    #[cfg(not(windows))]
     {
-        if server.is_file() {
-            command.env("SCRCPY_SERVER_PATH", server);
+        if let Ok(server) = app
+            .path()
+            .resolve("tools/scrcpy-server", BaseDirectory::Resource)
+        {
+            if server.is_file() {
+                command.env("SCRCPY_SERVER_PATH", server);
+            }
         }
     }
     let child = command
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
         .spawn()
         .map_err(|error| format!("启动 scrcpy 失败: {error}"))?;
     let state = MirrorState {
@@ -453,23 +456,6 @@ fn start_mirror(
 fn stop_mirror(process: State<'_, MirrorProcess>) -> Result<MirrorState, String> {
     let mut guard = process.0.lock().map_err(|_| "镜像进程状态不可用")?;
     if let Some(mut running) = guard.take() {
-        #[cfg(windows)]
-        {
-            let pid = running.child.id().to_string();
-            let status = hidden_command("taskkill")
-                .args(["/PID", &pid, "/T", "/F"])
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .map_err(|error| format!("停止 scrcpy 失败: {error}"))?;
-            if !status.success() {
-                running
-                    .child
-                    .kill()
-                    .map_err(|error| format!("停止 scrcpy 失败: {error}"))?;
-            }
-        }
-        #[cfg(not(windows))]
         running
             .child
             .kill()
