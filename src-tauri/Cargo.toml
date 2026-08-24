@@ -1,6 +1,6 @@
 [package]
 name = "panda-gaming-desktop"
-version = "0.1.3"
+version = "0.1.4"
 description = "Desktop companion for Panda Mouse Pro with Android mirroring and keyboard-and-mouse controls"
 authors = ["Beijing Guanshanjiyue Technology Co., Ltd."]
 license = "Apache-2.0"
