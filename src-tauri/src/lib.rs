@@ -316,8 +316,75 @@ fn start_mirror(
         }
         *guard = None;
     }
-    let mut command = hidden_command(scrcpy);
-    command.env("ADB", adb);
+    let mut arguments = vec![
+        "--serial".to_string(),
+        options.serial.clone(),
+        "-K".to_string(),
+        "-M".to_string(),
+        "--mouse-bind=++++:++++".to_string(),
+        "--max-size".to_string(),
+        options.max_size.to_string(),
+        "--video-bit-rate".to_string(),
+        format!("{}M", options.video_bit_rate_mbps),
+        "--max-fps".to_string(),
+        options.max_fps.to_string(),
+        "--window-title".to_string(),
+        "Panda Gaming Mirror".to_string(),
+    ];
+    if options.virtual_display {
+        let height = options.max_size.saturating_mul(9) / 16;
+        arguments.push(format!("--new-display={}x{}", options.max_size, height));
+        arguments.push("--display-ime-policy=local".to_string());
+    }
+    if options.turn_screen_off && !options.virtual_display {
+        arguments.push("--turn-screen-off".to_string());
+    }
+    if options.stay_awake {
+        arguments.push(
+            if options.virtual_display {
+                "--keep-active"
+            } else {
+                "--stay-awake"
+            }
+            .to_string(),
+        );
+    }
+    if options.fullscreen {
+        arguments.push("--fullscreen".to_string());
+    }
+    if !options.audio {
+        arguments.push("--no-audio".to_string());
+    }
+    if options.always_on_top {
+        arguments.push("--always-on-top".to_string());
+    }
+    if options.launch_panda_mouse_pro || options.virtual_display {
+        arguments.push("--start-app=com.panda.mouse".to_string());
+    }
+
+    #[cfg(windows)]
+    let mut command = {
+        let wrapper = app
+            .path()
+            .resolve("panda-scrcpy.vbs", BaseDirectory::Resource)
+            .map_err(|error| format!("无法定位 Windows scrcpy 启动器: {error}"))?;
+        let tools_dir = scrcpy.parent().ok_or("无法定位 scrcpy 工具目录")?;
+        let mut command = Command::new("wscript.exe");
+        command
+            .args(["//B", "//NoLogo"])
+            .arg(wrapper)
+            .args(&arguments)
+            .current_dir(tools_dir);
+        command
+    };
+    #[cfg(not(windows))]
+    let mut command = {
+        let mut command = hidden_command(&scrcpy);
+        command.args(&arguments);
+        command
+    };
+
+    command.env("ADB", &adb);
     if let Ok(server) = app
         .path()
         .resolve("tools/scrcpy-server", BaseDirectory::Resource)
@@ -325,49 +392,6 @@ fn start_mirror(
         if server.is_file() {
             command.env("SCRCPY_SERVER_PATH", server);
         }
-    }
-    command.args([
-        "--serial",
-        &options.serial,
-        "-K",
-        "-M",
-        "--mouse-bind=++++:++++",
-        "--max-size",
-        &options.max_size.to_string(),
-        "--video-bit-rate",
-        &format!("{}M", options.video_bit_rate_mbps),
-        "--max-fps",
-        &options.max_fps.to_string(),
-        "--window-title",
-        "Panda Gaming Mirror",
-    ]);
-    if options.virtual_display {
-        let height = options.max_size.saturating_mul(9) / 16;
-        command
-            .arg(format!("--new-display={}x{}", options.max_size, height))
-            .arg("--display-ime-policy=local");
-    }
-    if options.turn_screen_off && !options.virtual_display {
-        command.arg("--turn-screen-off");
-    }
-    if options.stay_awake {
-        command.arg(if options.virtual_display {
-            "--keep-active"
-        } else {
-            "--stay-awake"
-        });
-    }
-    if options.fullscreen {
-        command.arg("--fullscreen");
-    }
-    if !options.audio {
-        command.arg("--no-audio");
-    }
-    if options.always_on_top {
-        command.arg("--always-on-top");
-    }
-    if options.launch_panda_mouse_pro || options.virtual_display {
-        command.arg("--start-app=com.panda.mouse");
     }
     let child = command
         .stdin(Stdio::null())
@@ -391,6 +415,23 @@ fn start_mirror(
 fn stop_mirror(process: State<'_, MirrorProcess>) -> Result<MirrorState, String> {
     let mut guard = process.0.lock().map_err(|_| "镜像进程状态不可用")?;
     if let Some(mut running) = guard.take() {
+        #[cfg(windows)]
+        {
+            let pid = running.child.id().to_string();
+            let status = hidden_command("taskkill")
+                .args(["/PID", &pid, "/T", "/F"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .map_err(|error| format!("停止 scrcpy 失败: {error}"))?;
+            if !status.success() {
+                running
+                    .child
+                    .kill()
+                    .map_err(|error| format!("停止 scrcpy 失败: {error}"))?;
+            }
+        }
+        #[cfg(not(windows))]
         running
             .child
             .kill()

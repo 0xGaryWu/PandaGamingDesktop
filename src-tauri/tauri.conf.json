@@ -57,6 +57,7 @@
     },
     "resources": {
       "tools/": "tools/",
+      "resources/panda-scrcpy.vbs": "panda-scrcpy.vbs",
       "resources/THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt",
       "../NOTICE": "NOTICE"
     }
