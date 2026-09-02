@@ -105,7 +105,7 @@ export default function App() {
 
   const selected = useMemo(() => devices.find((device) => device.serial === options.serial), [devices, options.serial]);
   const ready = Boolean(environment?.adb.available && environment?.scrcpy.available && selected?.state === "device");
-  const canActivatePmp = Boolean(environment?.adb.available && selected?.state === "device");
+  const canActivateApps = Boolean(environment?.adb.available && selected?.state === "device");
 
   async function toggleMirror() {
     setBusy(true);
@@ -115,13 +115,13 @@ export default function App() {
     } catch (error) { setNotice({ raw: localizeBackendError(locale, error) }); } finally { setBusy(false); }
   }
 
-  async function activatePmp() {
+  async function activateApps() {
     if (!options.serial) return;
     setBusy(true);
-    setNotice({ key: "activatingPmp" });
+    setNotice({ key: "activatingApps" });
     try {
-      await desktopApi.activatePmp(options.serial);
-      setNotice({ key: "activationCommandCompleted" });
+      const appName = await desktopApi.activateApps(options.serial);
+      setNotice({ key: "activationCommandCompleted", values: { app: appName } });
     } catch (error) {
       setNotice({ raw: localizeBackendError(locale, error) });
     } finally {
@@ -201,7 +201,7 @@ export default function App() {
       <p className="shortcut-note">{t("shortcutNote")}</p>
     </section>
 
-    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-meta"><span>v{packageMetadata.version}</span><button type="button" title={t("officialWebsite")} onClick={() => void openUrl("https://pandagame.app")}>pandagame.app</button></div><div className="footer-actions"><button className="secondary" onClick={() => void activatePmp()} disabled={busy || !canActivatePmp}><Zap size={18}/>{t("activatePmp")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
+    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-meta"><span>v{packageMetadata.version}</span><button type="button" title={t("officialWebsite")} onClick={() => void openUrl("https://pandagame.app")}>pandagame.app</button></div><div className="footer-actions"><button className="secondary" onClick={() => void activateApps()} disabled={busy || !canActivateApps}><Zap size={18}/>{t("activateApps")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
   </main>;
 }
 

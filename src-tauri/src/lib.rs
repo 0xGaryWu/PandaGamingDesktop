@@ -230,11 +230,69 @@ fn android_sdk(adb: &Path, serial: &str) -> Result<u32, String> {
         .map_err(|_| "无法读取 Android SDK 版本".to_string())
 }
 
-fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
+struct ActivationTarget {
+    name: &'static str,
+    package_name: &'static str,
+    script_path: &'static str,
+}
+
+const ACTIVATION_TARGETS: &[ActivationTarget] = &[
+    ActivationTarget {
+        name: "Panda Mouse Pro",
+        package_name: "com.panda.mouse",
+        script_path: "/sdcard/Android/data/com.panda.mouse/files/scripts/activate.sh",
+    },
+    ActivationTarget {
+        name: "Panda Gamepad Pro",
+        package_name: "com.panda.gamepad",
+        script_path: "/sdcard/Android/data/com.panda.gamepad/files/scripts/activate.sh",
+    },
+    ActivationTarget {
+        name: "Panda Touch Pro",
+        package_name: "com.panda.touch",
+        script_path: "/sdcard/Android/data/com.panda.touch/files/scripts/activate.sh",
+    },
+];
+
+fn is_package_installed(adb: &Path, serial: &str, package_name: &str) -> Result<bool, String> {
+    let output = hidden_command(adb)
+        .args([
+            "-s",
+            serial,
+            "shell",
+            "pm",
+            "list",
+            "packages",
+            package_name,
+        ])
+        .output()
+        .map_err(|error| format!("无法运行 adb: {error}"))?;
+    if !output.status.success() {
+        return Err(format!("无法运行 adb: {}", command_error(&output)));
+    }
+    let expected = format!("package:{package_name}");
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .any(|line| line.trim() == expected))
+}
+
+fn activate_apps_blocking(serial: String, app: AppHandle) -> Result<String, String> {
     if serial.trim().is_empty() {
         return Err("请先选择设备".into());
     }
     let adb = resolve_tool("adb", &app).ok_or("未找到 adb，请重新安装 Panda Gaming Desktop")?;
+    let target = ACTIVATION_TARGETS
+        .iter()
+        .find_map(
+            |target| match is_package_installed(&adb, &serial, target.package_name) {
+                Ok(true) => Some(Ok(target)),
+                Ok(false) => None,
+                Err(error) => Some(Err(error)),
+            },
+        )
+        .transpose()?
+        .ok_or("未安装受支持的 Panda 映射 App")?;
+
     let launch = hidden_command(&adb)
         .args([
             "-s",
@@ -242,16 +300,17 @@ fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
             "shell",
             "monkey",
             "-p",
-            "com.panda.mouse",
+            target.package_name,
             "-c",
             "android.intent.category.LAUNCHER",
             "1",
         ])
         .output()
-        .map_err(|error| format!("无法启动 Panda Mouse Pro: {error}"))?;
+        .map_err(|error| format!("无法启动映射 App: {}: {error}", target.name))?;
     if !launch.status.success() {
         return Err(format!(
-            "无法启动 Panda Mouse Pro: {}",
+            "无法启动映射 App: {}: {}",
+            target.name,
             command_error(&launch)
         ));
     }
@@ -259,29 +318,24 @@ fn activate_pmp_blocking(serial: String, app: AppHandle) -> Result<(), String> {
     thread::sleep(Duration::from_secs(3));
 
     let activation = hidden_command(adb)
-        .args([
-            "-s",
-            &serial,
-            "shell",
-            "sh",
-            "/sdcard/Android/data/com.panda.mouse/files/scripts/activate.sh",
-        ])
+        .args(["-s", &serial, "shell", "sh", target.script_path])
         .output()
-        .map_err(|error| format!("Panda Mouse Pro 激活失败: {error}"))?;
+        .map_err(|error| format!("Panda App 激活失败: {}: {error}", target.name))?;
     if !activation.status.success() {
         return Err(format!(
-            "Panda Mouse Pro 激活失败: {}",
+            "Panda App 激活失败: {}: {}",
+            target.name,
             command_error(&activation)
         ));
     }
-    Ok(())
+    Ok(target.name.to_string())
 }
 
 #[tauri::command]
-async fn activate_pmp(serial: String, app: AppHandle) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || activate_pmp_blocking(serial, app))
+async fn activate_apps(serial: String, app: AppHandle) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || activate_apps_blocking(serial, app))
         .await
-        .map_err(|error| format!("Panda Mouse Pro 激活失败: {error}"))?
+        .map_err(|error| format!("Panda App 激活失败: {error}"))?
 }
 
 #[tauri::command]
@@ -456,7 +510,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             check_environment,
             list_devices,
-            activate_pmp,
+            activate_apps,
             start_mirror,
             stop_mirror,
             mirror_state
