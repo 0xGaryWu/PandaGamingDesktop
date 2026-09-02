@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Cable, CircleStop, Command, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert, Zap } from "lucide-react";
+import { Cable, CircleStop, Command, HelpCircle, Keyboard, MonitorPlay, MousePointer2, RefreshCw, Settings2, Smartphone, TriangleAlert, X, Zap } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { desktopApi } from "./api";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
@@ -23,6 +23,7 @@ export default function App() {
   const [options, setOptions] = useState(defaults);
   const [mirror, setMirror] = useState<MirrorState>({ running: false, pid: null, serial: null });
   const [busy, setBusy] = useState(false);
+  const [showDeviceHelp, setShowDeviceHelp] = useState(false);
   const [notice, setNotice] = useState<Notice>({ key: "checkingEnvironment" });
   const t = useCallback((key: MessageKey, values?: Record<string, string | number>) => translate(locale, key, values), [locale]);
 
@@ -32,6 +33,7 @@ export default function App() {
       const [env, found, state] = await Promise.all([desktopApi.environment(), desktopApi.devices(), desktopApi.state()]);
       setEnvironment(env); setDevices(found); setMirror(state);
       const usable = found.filter((device) => device.state === "device");
+      setShowDeviceHelp(usable.length === 0);
       setOptions((current) => ({ ...current, serial: usable.some((d) => d.serial === current.serial) ? current.serial : usable[0]?.serial ?? "" }));
       setNotice(usable.length ? { key: "devicesFound", values: { count: usable.length } } : { key: "noDevices" });
     } catch (error) { setNotice({ raw: localizeBackendError(locale, error) }); } finally { setBusy(false); }
@@ -154,7 +156,8 @@ export default function App() {
 
     <div className="layout">
       <section className="panel devices-panel">
-        <div className="section-title"><div><Smartphone size={18}/><h3>{t("selectDevice")}</h3></div><button className="icon-button" onClick={() => void refresh()} disabled={busy} title={t("refresh")}><RefreshCw size={17} className={busy ? "spin" : ""}/></button></div>
+        <div className="section-title"><div><Smartphone size={18}/><h3>{t("selectDevice")}</h3></div><div className="section-actions"><button className={`help-button ${showDeviceHelp ? "active" : ""}`} onClick={() => setShowDeviceHelp((visible) => !visible)} aria-expanded={showDeviceHelp}><HelpCircle size={15}/>{t("connectionHelp")}</button><button className="icon-button" onClick={() => void refresh()} disabled={busy} title={t("refresh")}><RefreshCw size={17} className={busy ? "spin" : ""}/></button></div></div>
+        {showDeviceHelp && <div className="device-help"><div><strong>{t("connectDeviceTitle")}</strong><button type="button" onClick={() => setShowDeviceHelp(false)} title={t("closeHelp")}><X size={14}/></button></div><ol><li>{t("connectDeviceStep1")}</li><li>{t("connectDeviceStep2")}</li><li>{t("connectDeviceStep3")}</li><li>{t("connectDeviceStep4")}</li></ol><p>{t("connectDeviceTip")}</p></div>}
         {!devices.length && <div className="empty"><Cable size={34}/><strong>{t("waitingDevice")}</strong><span>{t("enableUsbDebugging")}</span></div>}
         <div className="device-list">{devices.map((device) => <button key={device.serial} className={`device ${options.serial === device.serial ? "selected" : ""}`} onClick={() => setOption("serial", device.serial)} disabled={device.state !== "device" || mirror.running}>
           <span className="phone-icon"><Smartphone size={20}/></span><span><strong>{device.model ?? device.serial}</strong><small>{device.serial}</small></span><em>{device.state === "device" ? t("connected") : device.state === "unauthorized" ? t("unauthorized") : device.state}</em>
