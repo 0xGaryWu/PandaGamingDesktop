@@ -17,7 +17,7 @@ const defaults: MirrorOptions = {
 };
 
 export default function App() {
-  const [locale, setLocale] = useState<Locale>(detectLocale);
+  const [locale] = useState<Locale>(detectLocale);
   const [environment, setEnvironment] = useState<EnvironmentStatus | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [options, setOptions] = useState(defaults);
@@ -149,9 +149,7 @@ export default function App() {
   return <main className="app-shell">
     <header>
       <div className="brand-mark"><img src={pandaStudioMark} alt="Panda Gaming Studio" /></div>
-      <div className="brand-copy"><h1>{t("appTitle")}</h1><p>{t("appDescriptionBefore")} <a href="https://github.com/Genymobile/scrcpy" onClick={(event) => { event.preventDefault(); void openUrl("https://github.com/Genymobile/scrcpy"); }}>scrcpy</a>{t("appDescriptionAfter")}</p></div>
-      <select className="language-select" value={locale} onChange={(event) => setLocale(event.target.value as Locale)} aria-label={t("language")}><option value="zh-CN">中文</option><option value="en">EN</option></select>
-      <span className={`status-chip ${mirror.running ? "online" : ""}`}><i />{mirror.running ? t("mirrorRunning") : t("standby")}</span>
+      <div className="brand-copy"><div className="brand-title-row"><h1>{t("appTitle")}</h1><span>v{packageMetadata.version}</span><button type="button" title={t("officialWebsite")} onClick={() => void openUrl("https://pandagame.app")}>pandagame.app</button></div><p>{t("appDescriptionBefore")} <a href="https://github.com/Genymobile/scrcpy" onClick={(event) => { event.preventDefault(); void openUrl("https://github.com/Genymobile/scrcpy"); }}>scrcpy</a>{t("appDescriptionAfter")}</p></div>
     </header>
 
     <div className="layout">
@@ -204,7 +202,7 @@ export default function App() {
       <p className="shortcut-note">{t("shortcutNote")}</p>
     </section>
 
-    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-meta"><span>v{packageMetadata.version}</span><button type="button" title={t("officialWebsite")} onClick={() => void openUrl("https://pandagame.app")}>pandagame.app</button></div><div className="footer-actions"><button className="secondary" onClick={() => void activateApps()} disabled={busy || !canActivateApps}><Zap size={18}/>{t("activateApps")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
+    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void activateApps()} disabled={busy || !canActivateApps}><Zap size={18}/>{t("activateApps")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
   </main>;
 }
 
