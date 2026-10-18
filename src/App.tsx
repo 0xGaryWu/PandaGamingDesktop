@@ -6,21 +6,16 @@ import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./ty
 import { detectLocale, localizeBackendError, translate, type Locale, type MessageKey } from "./i18n";
 import pandaStudioMark from "./assets/panda-studio-mark.png";
 import packageMetadata from "../package.json";
+import { loadOptions, saveOptions } from "./preferences";
 
 type Notice = { key: MessageKey; values?: Record<string, string | number> } | { raw: string };
-
-const defaults: MirrorOptions = {
-  serial: "", maxSize: 1920, videoBitRateMbps: 12, maxFps: 60,
-  turnScreenOff: false, stayAwake: true, fullscreen: false,
-  audio: true, alwaysOnTop: false,
-  launchPandaMousePro: true, virtualDisplay: false
-};
 
 export default function App() {
   const [locale] = useState<Locale>(detectLocale);
   const [environment, setEnvironment] = useState<EnvironmentStatus | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
-  const [options, setOptions] = useState(defaults);
+  const [options, setOptions] = useState(loadOptions);
+  useEffect(() => { saveOptions(options); }, [options]);
   const [mirror, setMirror] = useState<MirrorState>({ running: false, pid: null, serial: null });
   const [busy, setBusy] = useState(false);
   const [showDeviceHelp, setShowDeviceHelp] = useState(false);
