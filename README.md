@@ -52,6 +52,11 @@ The packaging script downloads the official scrcpy 4.1 portable package for
 the current platform, verifies its SHA-256 checksum, bundles the required tools,
 and runs `tauri build`.
 
+Windows 11 ARM64 development is also supported. `tools:prepare` downloads the
+Windows x64 adb/scrcpy package, which runs through Windows x64 emulation. The
+tool metadata records the actual x64 tool architecture. GitHub Releases still
+provide the Windows x64 installer.
+
 Build output is written to:
 
 ```text

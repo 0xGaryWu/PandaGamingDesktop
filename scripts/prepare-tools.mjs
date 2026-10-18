@@ -32,10 +32,16 @@ const assets = {
 const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const toolsDir = join(projectRoot, "src-tauri", "tools");
 const key = `${process.platform}-${process.arch}`;
-const asset = assets[key];
+// Windows ARM64 uses the same x64 tools through Windows 11 emulation.
+const toolsArch = key === "win32-arm64" ? "x64" : process.arch;
+const asset = assets[`${process.platform}-${toolsArch}`];
 
 if (!asset) {
-  throw new Error(`暂不支持 ${key}。目前支持 Windows x64、Linux x64、macOS x64/arm64。`);
+  throw new Error(`暂不支持 ${key}。目前支持 Windows x64/arm64、Linux x64、macOS x64/arm64。`);
+}
+
+if (key === "win32-arm64") {
+  console.log("Windows ARM64：使用 Windows x64 adb/scrcpy 工具（通过系统模拟运行）。");
 }
 
 const required = process.platform === "win32" ? ["adb.exe", "scrcpy.exe", "scrcpy-server"] : ["adb", "scrcpy", "scrcpy-server"];
@@ -43,7 +49,7 @@ const existingMetadata = await readFile(join(toolsDir, "panda-tools.json"), "utf
   .then(JSON.parse)
   .catch(() => null);
 const existingFiles = await Promise.all(required.map((file) => access(join(toolsDir, file)).then(() => true).catch(() => false)));
-if (existingMetadata?.sha256 === asset.sha256 && existingMetadata?.platform === process.platform && existingMetadata?.arch === process.arch && existingFiles.every(Boolean)) {
+if (existingMetadata?.sha256 === asset.sha256 && existingMetadata?.platform === process.platform && existingMetadata?.arch === toolsArch && existingFiles.every(Boolean)) {
   console.log(`复用已校验的 scrcpy ${SCRCPY_VERSION} 工具目录：${toolsDir}`);
   process.exit(0);
 }
@@ -89,7 +95,7 @@ try {
   await writeFile(join(toolsDir, "panda-tools.json"), JSON.stringify({
     scrcpyVersion: SCRCPY_VERSION,
     platform: process.platform,
-    arch: process.arch,
+    arch: toolsArch,
     source: `${RELEASE_BASE}/${asset.file}`,
     sha256: digest
   }, null, 2));
