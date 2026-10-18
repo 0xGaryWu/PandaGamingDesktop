@@ -180,11 +180,19 @@ fn list_devices(app: AppHandle) -> Result<Vec<Device>, String> {
 }
 
 fn parse_device(line: &str) -> Option<Device> {
-    let mut parts = line.split_whitespace();
-    let serial = parts.next()?.to_string();
+    // Most adb versions use a tab between the serial and state, but some builds
+    // print aligned spaces instead. An mDNS instance may itself contain spaces
+    // (for example " (2)"), so locate the known state column without splitting
+    // the serial itself on whitespace.
+    let (serial, details) = split_device_columns(line)?;
+    let serial = serial.trim();
+    if serial.is_empty() {
+        return None;
+    }
+    let mut parts = details.split_whitespace();
     let state = parts.next()?.to_string();
     let mut device = Device {
-        serial,
+        serial: serial.to_string(),
         state,
         model: None,
         product: None,
@@ -201,6 +209,134 @@ fn parse_device(line: &str) -> Option<Device> {
         }
     }
     Some(device)
+}
+
+fn split_device_columns(line: &str) -> Option<(&str, &str)> {
+    if let Some(columns) = line.split_once('\t') {
+        return Some(columns);
+    }
+
+    const STATES: &[&str] = &[
+        "device",
+        "offline",
+        "unauthorized",
+        "recovery",
+        "sideload",
+        "bootloader",
+        "host",
+        "no permissions",
+    ];
+
+    STATES.iter().find_map(|state| {
+        let marker = format!(" {state}");
+        line.find(&marker).and_then(|index| {
+            let after_state = &line[index + marker.len()..];
+            if after_state
+                .chars()
+                .next()
+                .is_some_and(|character| !character.is_whitespace())
+            {
+                return None;
+            }
+            let serial = &line[..index];
+            if serial.trim().is_empty() {
+                None
+            } else {
+                Some((serial, line[index..].trim_start()))
+            }
+        })
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_device;
+
+    #[test]
+    fn parses_usb_device() {
+        let device =
+            parse_device("RFCX500CHSL\tdevice product:gts8wifi model:SM_S921U1 transport_id:1")
+                .expect("USB device should parse");
+
+        assert_eq!(device.serial, "RFCX500CHSL");
+        assert_eq!(device.state, "device");
+        assert_eq!(device.model.as_deref(), Some("SM S921U1"));
+        assert_eq!(device.product.as_deref(), Some("gts8wifi"));
+        assert_eq!(device.transport_id.as_deref(), Some("1"));
+    }
+
+    #[test]
+    fn preserves_spaces_in_wireless_mdns_serial() {
+        let device = parse_device(
+            "adb-10CF2C1B8C001C0-XpTc8I (2)._adb-tls-connect._tcp\tdevice product:e3q model:SM_S9280 transport_id:3",
+        )
+        .expect("wireless device should parse");
+
+        assert_eq!(
+            device.serial,
+            "adb-10CF2C1B8C001C0-XpTc8I (2)._adb-tls-connect._tcp"
+        );
+        assert_eq!(device.state, "device");
+        assert_eq!(device.model.as_deref(), Some("SM S9280"));
+    }
+
+    #[test]
+    fn parses_space_separated_tcpip_device() {
+        let device =
+            parse_device("192.168.3.27:39627    device product:e3q model:SM_S9280 transport_id:4")
+                .expect("space-separated TCP/IP device should parse");
+
+        assert_eq!(device.serial, "192.168.3.27:39627");
+        assert_eq!(device.state, "device");
+        assert_eq!(device.transport_id.as_deref(), Some("4"));
+    }
+
+    #[test]
+    fn parses_minimal_tcpip_device_line() {
+        let device =
+            parse_device("192.168.3.27:39627\tdevice").expect("minimal TCP/IP device should parse");
+
+        assert_eq!(device.serial, "192.168.3.27:39627");
+        assert_eq!(device.state, "device");
+    }
+
+    #[test]
+    fn parses_minimal_space_separated_tcpip_device_line() {
+        let device = parse_device("192.168.3.27:39627    device")
+            .expect("minimal space-separated TCP/IP device should parse");
+
+        assert_eq!(device.serial, "192.168.3.27:39627");
+        assert_eq!(device.state, "device");
+    }
+
+    #[test]
+    fn keeps_unauthorized_device_visible() {
+        let device = parse_device("RFCX500CHSL    unauthorized usb:1-2 transport_id:5")
+            .expect("unauthorized device should parse");
+
+        assert_eq!(device.serial, "RFCX500CHSL");
+        assert_eq!(device.state, "unauthorized");
+    }
+
+    #[test]
+    fn ignores_header_and_blank_lines() {
+        assert!(parse_device("List of devices attached").is_none());
+        assert!(parse_device("").is_none());
+    }
+
+    #[test]
+    fn preserves_mdns_spaces_when_columns_are_space_separated() {
+        let device = parse_device(
+            "adb-10CF2C1B8C001C0-XpTc8I (2)._adb-tls-connect._tcp    device product:e3q model:SM_S9280",
+        )
+        .expect("space-separated wireless device should parse");
+
+        assert_eq!(
+            device.serial,
+            "adb-10CF2C1B8C001C0-XpTc8I (2)._adb-tls-connect._tcp"
+        );
+        assert_eq!(device.state, "device");
+    }
 }
 
 fn command_error(output: &std::process::Output) -> String {
