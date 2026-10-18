@@ -1,10 +1,7 @@
 import { createHash } from "node:crypto";
-import { createWriteStream } from "node:fs";
 import { access, chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -60,9 +57,19 @@ const extractDir = join(workDir, "extract");
 
 try {
   console.log(`下载 scrcpy ${SCRCPY_VERSION} (${key})…`);
-  const response = await fetch(`${RELEASE_BASE}/${asset.file}`, { redirect: "follow" });
-  if (!response.ok || !response.body) throw new Error(`下载失败：HTTP ${response.status}`);
-  await pipeline(Readable.fromWeb(response.body), createWriteStream(archivePath));
+  // curl honors HTTPS_PROXY/HTTP_PROXY on Node versions whose fetch does not.
+  const downloaded = spawnSync(process.platform === "win32" ? "curl.exe" : "curl", [
+    "--fail", "--location", "--show-error",
+    "--retry", "3", "--retry-all-errors", "--retry-delay", "2",
+    "--connect-timeout", "30", "--max-time", "600",
+    "--output", archivePath, `${RELEASE_BASE}/${asset.file}`
+  ], { stdio: "inherit" });
+  if (downloaded.error) {
+    throw new Error(`无法运行 curl 下载工具：${downloaded.error.message}`);
+  }
+  if (downloaded.status !== 0) {
+    throw new Error(`下载失败（curl exit ${downloaded.status}），请检查网络及 HTTP_PROXY/HTTPS_PROXY 设置。虚拟机应使用代理所在 Mac 的 IP，而不是 127.0.0.1。`);
+  }
 
   const digest = createHash("sha256").update(await readFile(archivePath)).digest("hex");
   if (digest !== asset.sha256) {
