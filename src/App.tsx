@@ -84,8 +84,11 @@ export default function App() {
         const state = await desktopApi.state();
         if (mirror.running && !state.running) setNotice({ key: "mirrorWindowExited" });
         setMirror(state);
-      } catch {
-        // A temporary status query failure should not interrupt an active mirror.
+      } catch (error) {
+        if (String(error).startsWith("scrcpy exited (")) {
+          setMirror({ running: false, pid: null, serial: null });
+          setNotice({ raw: String(error) });
+        }
       }
     }
 
@@ -123,6 +126,17 @@ export default function App() {
       setNotice({ raw: localizeBackendError(locale, error) });
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function copyLog() {
+    try {
+      const log = await desktopApi.log();
+      if (!log.trim()) { setNotice({ key: "logEmpty" }); return; }
+      await navigator.clipboard.writeText(log);
+      setNotice({ key: "logCopied" });
+    } catch (error) {
+      setNotice({ key: "logCopyFailed", values: { detail: String(error) } });
     }
   }
 
@@ -197,7 +211,7 @@ export default function App() {
       <p className="shortcut-note">{t("shortcutNote")}</p>
     </section>
 
-    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void activateApps()} disabled={busy || !canActivateApps}><Zap size={18}/>{t("activateApps")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
+    <footer><div className="footer-message"><i className={ready ? "ok" : ""}/><span>{message}</span></div><div className="footer-actions"><button className="secondary" onClick={() => void copyLog()}>{t("copyLog")}</button><button className="secondary" onClick={() => void activateApps()} disabled={busy || !canActivateApps}><Zap size={18}/>{t("activateApps")}</button><button className={`primary ${mirror.running ? "danger" : ""}`} onClick={() => void toggleMirror()} disabled={busy || (!mirror.running && !ready)}>{mirror.running ? <CircleStop size={19}/> : <MonitorPlay size={19}/>} {mirror.running ? t("stopMirror") : t(options.virtualDisplay ? "startIndependentDisplay" : "startMirror")}</button></div></footer>
   </main>;
 }
 

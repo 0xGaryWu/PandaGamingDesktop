@@ -1,6 +1,10 @@
 export type Locale = "zh-CN" | "en";
 
 const zh = {
+  copyLog: "复制日志",
+  logCopied: "日志已复制，可直接粘贴发送",
+  logEmpty: "暂无日志，请先尝试启动投屏",
+  logCopyFailed: "复制日志失败：{detail}",
   appTitle: "Panda Gaming Desktop",
   appDescriptionBefore: "借助开源项目",
   appDescriptionAfter: "，我们可以投射手机屏幕到电脑上，使用电脑的键鼠玩手机游戏！",
@@ -80,6 +84,10 @@ const zh = {
 } as const;
 
 const en: Record<keyof typeof zh, string> = {
+  copyLog: "Copy log",
+  logCopied: "Log copied. Paste it into your message.",
+  logEmpty: "No log yet. Try starting mirroring first.",
+  logCopyFailed: "Could not copy log: {detail}",
   appTitle: "Panda Gaming Desktop",
   appDescriptionBefore: "Mirror Android to your computer with",
   appDescriptionAfter: " and play with a keyboard and mouse.",

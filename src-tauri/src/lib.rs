@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
+    fs::File,
+    io::Write,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
@@ -15,6 +17,7 @@ struct MirrorProcess(Mutex<Option<RunningMirror>>);
 struct RunningMirror {
     child: Child,
     serial: String,
+    log_path: PathBuf,
 }
 
 #[derive(Serialize)]
@@ -552,11 +555,23 @@ fn start_mirror(
         arguments.push("--start-app=com.panda.mouse".to_string());
     }
 
+    let log_path = app
+        .path()
+        .app_log_dir()
+        .map_err(|error| format!("Cannot locate log directory: {error}"))?
+        .join("scrcpy.log");
+    std::fs::create_dir_all(log_path.parent().ok_or("Invalid log path")?)
+        .map_err(|error| format!("Cannot create log directory: {error}"))?;
+    let mut log =
+        File::create(&log_path).map_err(|error| format!("Cannot create scrcpy log: {error}"))?;
+    writeln!(log, "scrcpy: {scrcpy:?}\nadb: {adb:?}\nargs: {arguments:?}")
+        .map_err(|error| error.to_string())?;
+    let stderr_log = log.try_clone().map_err(|error| error.to_string())?;
     let mut command = hidden_command(&scrcpy);
     command
         .args(&arguments)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
+        .stdout(Stdio::from(log))
+        .stderr(Stdio::from(stderr_log));
     #[cfg(windows)]
     {
         let tools_dir = scrcpy.parent().ok_or("无法定位 scrcpy 工具目录")?;
@@ -587,6 +602,7 @@ fn start_mirror(
     *guard = Some(RunningMirror {
         child,
         serial: options.serial,
+        log_path,
     });
     Ok(state)
 }
@@ -618,13 +634,26 @@ fn mirror_state(process: State<'_, MirrorProcess>) -> Result<MirrorState, String
             serial: None,
         });
     };
-    if running
+    if let Some(status) = running
         .child
         .try_wait()
         .map_err(|error| error.to_string())?
-        .is_some()
     {
+        let failure = if status.success() {
+            None
+        } else {
+            let text = std::fs::read_to_string(&running.log_path).unwrap_or_default();
+            let lines: Vec<_> = text.lines().collect();
+            let tail = lines[lines.len().saturating_sub(12)..].join("\n");
+            Some(format!(
+                "scrcpy exited ({status}).\nLog: {}\n{tail}",
+                running.log_path.display()
+            ))
+        };
         *guard = None;
+        if let Some(error) = failure {
+            return Err(error);
+        }
         return Ok(MirrorState {
             running: false,
             pid: None,
@@ -638,6 +667,20 @@ fn mirror_state(process: State<'_, MirrorProcess>) -> Result<MirrorState, String
     })
 }
 
+#[tauri::command]
+fn read_mirror_log(app: AppHandle) -> Result<String, String> {
+    let path = app
+        .path()
+        .app_log_dir()
+        .map_err(|error| error.to_string())?
+        .join("scrcpy.log");
+    if !path.exists() {
+        return Ok(String::new());
+    }
+    let bytes = std::fs::read(path).map_err(|error| error.to_string())?;
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -649,6 +692,7 @@ pub fn run() {
             activate_apps,
             start_mirror,
             stop_mirror,
+            read_mirror_log,
             mirror_state
         ])
         .run(tauri::generate_context!())

@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { Device, EnvironmentStatus, MirrorOptions, MirrorState } from "./types";
 
 export const desktopApi = {
+  log: () => invoke<string>("read_mirror_log"),
   environment: () => invoke<EnvironmentStatus>("check_environment"),
   devices: () => invoke<Device[]>("list_devices"),
   activateApps: (serial: string) => invoke<string>("activate_apps", { serial }),
